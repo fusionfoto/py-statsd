@@ -5,7 +5,6 @@ import time
 import types
 import logging
 import gmetric
-# from xdrlib import Packer, Unpacker
 
 log = logging.getLogger(__name__)
 
@@ -206,11 +205,12 @@ class Server(object):
         import signal
 
         def signal_handler(signal, frame):
-                self.stop()
+            self.stop()
+
         signal.signal(signal.SIGINT, signal_handler)
 
         self._set_timer()
-        while 1:
+        while True:
             data, addr = self._sock.recvfrom(self.buf)
             self.process(data)
 
