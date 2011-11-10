@@ -1,5 +1,6 @@
+import functools
 import re
-from socket import AF_INET, SOCK_DGRAM, socket
+from socket import AF_INET, SOCK_DGRAM, socket, SHUT_RD
 import threading
 import time
 import types
@@ -36,6 +37,17 @@ TIMER_MSG = '''%(prefix)s.%(key)s.lower %(min)s %(ts)s
 %(prefix)s.%(key)s.upper_%(pct_threshold)s %(max_threshold)s %(ts)s
 '''
 
+def close_on_exn(fn):
+    @functools.wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        try:
+            fn(self, *args, **kwargs)
+        except:
+            self.stop()
+            raise
+
+    return wrapper
+
 class Server(object):
     
     def __init__(self, pct_threshold=90, debug=False, transport = 'graphite',
@@ -43,6 +55,9 @@ class Server(object):
                  graphite_host='localhost', graphite_port=2003,
                  flush_interval=10000, no_aggregate_counters = False, counters_prefix = 'stats',
                  timers_prefix = 'stats.timers'):
+        self.running = True
+        self._sock = None
+        self._timer = None
         self.buf = 8192
         self.flush_interval = flush_interval
         self.pct_threshold = pct_threshold
@@ -95,6 +110,7 @@ class Server(object):
                     self.counters[key] = 0;
                 self.counters[key] += float(fields[0] or 1) * (1 / sample_rate)
 
+    @close_on_exn
     def flush(self):
         ts = int(time.time())
         stats = 0
@@ -184,9 +200,11 @@ class Server(object):
 
 
     def _set_timer(self):
-        self._timer = threading.Timer(self.flush_interval/1000, self.flush)
-        self._timer.start()
+        if self.running:
+            self._timer = threading.Timer(self.flush_interval/1000, self.flush)
+            self._timer.start()
 
+    @close_on_exn
     def serve(self, hostname='', port=8125):
         assert type(port) is types.IntType, 'port is not an integer: %s' % (port)
         addr = (hostname, port)
@@ -205,9 +223,19 @@ class Server(object):
             self.process(data)
 
     def stop(self):
-        self._timer.cancel()
-        self._sock.close()
+        # Have to running flag in case cancel is called while the timer is being executed.
+        self.running = False
+        if self._timer is not None:
+            self._timer.cancel()
 
+        if self._sock is not None:
+            try:
+                # If you do not shutdown, the recvfrom call never returns.
+                self._sock.shutdown(SHUT_RD)
+            except:
+                pass
+
+            self._sock.close()
 
 class ServerDaemon(Daemon):
     def run(self, options):
