@@ -1,10 +1,17 @@
-python-statsd (1.0-3) UNRELEASED; urgency=low
+python-ss-statsd (1.7-2ss1) UNRELEASED; urgency=low
+
+  * This is a local package.
+  * Initial packaging of SwiftStack fork
+
+ -- Darrell Bishop <darrell@swiftstack.com>  Tue, 07 Feb 2012 12:15:01 -0800
+
+python-ss-statsd (1.7-1ss1) UNRELEASED; urgency=low
 
   * Exit on all exceptions
 
  -- Robert Scott <keyboard.operator@gmail.com>  Wed, 09 Nov 2011 16:40:00 -0800
 
-python-statsd (1.0-2) UNRELEASED; urgency=low
+python-ss-statsd (1.6-2) UNRELEASED; urgency=low
 
   [ Rob Terhaar ]
   * add requirement module for python-argparse
@@ -23,7 +30,7 @@ python-statsd (1.0-2) UNRELEASED; urgency=low
 
  -- Rob Terhaar <rterhaar@atlanticdynamic.com>  Thu, 14 Jul 2011 20:05:09 +0000
 
-python-statsd (1.0) UNRELEASED; urgency=low
+python-ss-statsd (1.6-1) UNRELEASED; urgency=low
 
   * First public package.
 
