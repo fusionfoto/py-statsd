@@ -55,7 +55,7 @@ class Server(object):
                  ganglia_host='localhost', ganglia_port=8649, ganglia_spoof_host='statd:statd',
                  graphite_host='localhost', graphite_port=2003,
                  flush_interval=10000, no_aggregate_counters=False, counters_prefix='stats',
-                 timers_prefix='stats.timers'):
+                 timers_prefix='stats.timers', queue=None):
         self.running = True
         self._sock = None
         self._timer = None
@@ -81,7 +81,12 @@ class Server(object):
                 # Graphite specific settings
                 graphite_host=graphite_host,
                 graphite_port=graphite_port,
-                no_aggregate_counters=no_aggregate_counters,
+                counters_prefix=counters_prefix,
+                timers_prefix=timers_prefix,
+            )
+        elif transport == 'graphite_queue':
+            self.transport = TransportGraphiteQueue(
+                queue=queue,
                 counters_prefix=counters_prefix,
                 timers_prefix=timers_prefix,
             )
@@ -248,20 +253,20 @@ class TransportGanglia(object):
 
 
 class TransportGraphite(object):
-    def __init__(self, host, port, no_aggregate_counters, \
-                 counters_prefix, timers_prefix):
+    def __init__(self, host, port, counters_prefix, timers_prefix):
         self.host = host
         self.port = port
-        self.no_aggregate_counters = no_aggregate_counters
+        if counters_prefix:
+            counters_prefix = '%s.' % (counters_prefix,)
         self.counters_prefix = counters_prefix
         self.timers_prefix = timers_prefix
-        self.graphite = None
+        self.graphite_socket = None
 
     def start_flush(self):
         self.stat_string = ''
 
     def flush_counter(self, k, v, ts):
-        msg = '%s.%s %s %s\n' % (self.counters_prefix, k, v, ts)
+        msg = '%s%s %s %s\n' % (self.counters_prefix, k, v, ts)
         self.stat_string += msg
 
 
@@ -280,11 +285,11 @@ class TransportGraphite(object):
 
     def flush_statsd_stats(self, stats, ts):
         self.stat_string += "statsd.numStats %s %d\n" % (stats, ts)
-        graphite = socket.socket()
+        graphite_socket = socket.socket()
         try:
-            graphite.connect((self.host, self.port))
-            graphite.sendall(stat_string)
-            graphite.close()
+            graphite_socket.connect((self.host, self.port))
+            graphite_socket.sendall(self.stat_string)
+            graphite_socket.close()
         except socket.error, e:
             log.error("Error communicating with Graphite: %s", e)
             if self.debug:
@@ -293,6 +298,40 @@ class TransportGraphite(object):
     def finish_flush(self):
         self.stat_string = ''
 
+
+class TransportGraphiteQueue(object):
+    def __init__(self, queue, counters_prefix, timers_prefix):
+        self.queue = queue
+        if counters_prefix:
+            counters_prefix = '%s.' % (counters_prefix,)
+        self.counters_prefix = counters_prefix
+        self.timers_prefix = timers_prefix
+
+    def start_flush(self):
+        pass
+
+    def flush_counter(self, k, v, ts):
+        self.queue.put([
+            ('%s%s' % (self.counters_prefix, k), (ts, v))
+        ])
+
+    def flush_timer(self, min_v, mean, max_v, count, max_threshold, ts):
+        upper_n = 'upper_%s' % (self.pct_threshold,)
+        self.queue.put([
+            ('.'.join(self.timers_prefix, k, 'lower'), (ts, min_v)),
+            ('.'.join(self.timers_prefix, k, 'count'), (ts, count)),
+            ('.'.join(self.timers_prefix, k, 'mean'), (ts, mean)),
+            ('.'.join(self.timers_prefix, k, 'upper'), (ts, max_v)),
+            ('.'.join(self.timers_prefix, k, upper_n), (ts, max_threshold)),
+        ])
+
+    def flush_statsd_stats(self, stats, ts):
+        self.queue.put([
+            ('statsd.numStats', (ts, stats))
+        ])
+
+    def finish_flush(self):
+        pass
 
 
 class TransportNop(object):
