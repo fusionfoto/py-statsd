@@ -1,4 +1,4 @@
-python-ss-statsd (1.7-3ss1) oneiric; urgency=low
+python-ss-statsd (1.7-3ss2) oneiric; urgency=low
 
   * Added "queue" writer.
 
