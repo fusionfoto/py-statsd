@@ -1,6 +1,7 @@
-python-ss-statsd (1.7-3ss2) oneiric; urgency=low
+python-ss-statsd (1.7-3ss6) oneiric; urgency=low
 
   * Added "queue" writer.
+  * Removed signal handling code, since we run the Server in a thread.
 
  -- SwiftStack Inc. <contact@swiftstack.net>  Wed, 08 Feb 2012 17:18:00 -0800
 
