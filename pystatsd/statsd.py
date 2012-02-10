@@ -99,3 +99,31 @@ class Client(object):
             [self.udp_sock.sendto("%s:%s" % (stat, value), addr) for stat, value in sampled_data.iteritems()]
         except:
             self.log.exception("unexpected error")
+
+
+# No-op version of Client
+class ClientNop(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    @contextlib.contextmanager
+    def timer(self, stats, sample_rate=1):
+        yield
+
+    def timing_since(self, stats, start, sample_rate=1):
+        pass
+
+    def timing(self, stats, time, sample_rate=1):
+        pass
+
+    def increment(self, stats, sample_rate=1):
+        pass
+
+    def decrement(self, stats, sample_rate=1):
+        pass
+
+    def update_stats(self, stats, delta, sample_rate=1):
+        pass
+
+    def send(self, data, sample_rate=1):
+        pass

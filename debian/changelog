@@ -1,5 +1,6 @@
-python-ss-statsd (1.7-3ss6) oneiric; urgency=low
+python-ss-statsd (1.7-3ss7) oneiric; urgency=low
 
+  * Added a ClientNop class.
   * Added "queue" writer.
   * Removed signal handling code, since we run the Server in a thread.
 
