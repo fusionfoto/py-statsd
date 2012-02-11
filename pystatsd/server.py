@@ -279,7 +279,7 @@ class TransportGraphite(object):
         }
 
     def flush_statsd_stats(self, stats, ts):
-        self.stat_string += "statsd.numStats %s %d\n" % (stats, ts)
+        self.flush_counter('statsd.numStats', stats, ts)
         graphite_socket = socket.socket()
         try:
             graphite_socket.connect((self.host, self.port))
@@ -322,9 +322,7 @@ class TransportGraphiteQueue(object):
         ])
 
     def flush_statsd_stats(self, stats, ts):
-        self.queue.put([
-            ('statsd.numStats', (ts, stats))
-        ])
+        self.flush_counter('statsd.numStats', stats, ts)
 
     def finish_flush(self):
         pass
