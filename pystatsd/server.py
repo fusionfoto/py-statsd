@@ -58,6 +58,7 @@ class Server(object):
         self.running = True
         self._sock = None
         self._timer = None
+        self._lock = threading.Lock()
         self.buf = 8192
         self.flush_interval = flush_interval
         self.pct_threshold = pct_threshold
@@ -108,11 +109,13 @@ class Server(object):
         if len(bits) == 0:
             return
 
+        self._lock.acquire()
         for bit in bits:
             sample_rate = 1;
             fields = bit.split('|')
             if None==fields[1]:
                 log.error('Bad line: %s' % bit)
+                self._lock.release()
                 return
 
             if (fields[1] == 'ms'):
@@ -125,9 +128,11 @@ class Server(object):
                 if key not in self.counters:
                     self.counters[key] = 0;
                 self.counters[key] += float(fields[0] or 1) * (1 / sample_rate)
+        self._lock.release()
 
     @close_on_exn
     def flush(self):
+        self._lock.acquire()
         ts = int(time.time())
         stats = 0
 
@@ -172,6 +177,7 @@ class Server(object):
 
         self.transport.flush_statsd_stats(stats, ts)
         self.transport.finish_flush()
+        self._lock.release()
         self._set_timer()
 
         if self.debug:
