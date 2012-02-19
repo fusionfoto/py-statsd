@@ -1,3 +1,9 @@
+python-ss-statsd (1.7-4ss1) oneiric; urgency=low
+
+  * Added locking for stats state in flush() and process().
+
+ -- SwiftStack Inc. <contact@swiftstack.net>  Sun, 19 Feb 2012 15:38:52 -0800
+
 python-ss-statsd (1.7-3ss8) oneiric; urgency=low
 
   * Added a ClientNop class.
