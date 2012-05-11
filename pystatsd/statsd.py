@@ -36,7 +36,8 @@ class Client(object):
 
     def timing_since(self, stats, start, sample_rate=1):
         """
-        Log timing information as the number of milliseconds since the provided time float
+        Log timing information as the number of milliseconds since the provided
+        time float.
         >>> start = time.time()
         >>> # do stuff
         >>> statsd_client.timing_since('some.time', start)
@@ -94,17 +95,22 @@ class Client(object):
         addr = (self.host, self.port)
 
         if self.prefix:
-            data = dict((".".join((self.prefix, stat)), value) for stat, value in data.iteritems())
+            data = dict(
+                (self.prefix + '.' + stat, value) for stat, value
+                in data.iteritems())
 
         if sample_rate < 1:
             if random.random() > sample_rate:
                 return
-            sampled_data = dict((stat, "%s|@%s" % (value, sample_rate)) for stat, value in data.iteritems())
+            sampled_data = dict(
+                (stat, "%s|@%s" % (value, sample_rate)) for stat, value
+                in data.iteritems())
         else:
             sampled_data = data
 
         try:
-            [self.udp_sock.sendto("%s:%s" % (stat, value), addr) for stat, value in sampled_data.iteritems()]
+            for stat, value in sampled_data.iteritems():
+                self.udp_sock.sendto("%s:%s" % (stat, value), addr)
         except:
             self.log.exception("unexpected error")
 
