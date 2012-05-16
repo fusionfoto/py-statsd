@@ -55,9 +55,10 @@ class Server(object):
 
     def __init__(self, pct_threshold=90, debug=False, transport='graphite',
                  ganglia_host='localhost', ganglia_port=8649,
-                 ganglia_spoof_host='statd:statd', graphite_host='localhost',
+                 ganglia_spoof_host='statsd:statsd', graphite_host='localhost',
                  graphite_port=2003, flush_interval=10,
                  no_aggregate_counters=False, counters_prefix='stats',
+                 ganglia_counter_group='_counters',
                  timers_prefix='stats.timers', queue=None):
         self.running = True
         self._sock = None
@@ -80,6 +81,7 @@ class Server(object):
                 dmax=int(self.flush_interval * 1.2 * 1000),
                 # What hostname should these metrics be attached to.
                 spoof_host=ganglia_spoof_host,
+                counter_group=ganglia_counter_group,
                 pct_threshold=pct_threshold,
             )
         elif transport == 'graphite':
@@ -233,23 +235,23 @@ class Server(object):
 
 
 class TransportGanglia(object):
-    def __init__(self, host, port, protocol, dmax, spoof_host, pct_threshold):
+    def __init__(self, host, port, protocol, dmax, spoof_host, pct_threshold,
+                 counter_group, timing_group_prefix=''):
         self.host = host
         self.port = port
         self.protocol = protocol
         self.dmax = dmax
         self.spoof_host = spoof_host
         self.pct_threshold = pct_threshold
+        self.counter_group = counter_group
         self.g = None
 
     def start_flush(self):
         self.g = gmetric.Gmetric(self.host, self.port, self.protocol)
 
     def flush_counter(self, k, v, ts):
-        # We put counters in _counters group. Underscore is to make sure
-        # counters show up first in the GUI. Change below if you disagree.
         self.g.send(k, v, "double", "count", "both", 60, self.dmax,
-                    "_counters", self.spoof_host)
+                    self.counter_group, self.spoof_host)
 
     def flush_timer(self, k, min, mean, max, count, max_threshold, ts):
         # What group should these metrics be in. For the time being we'll set
@@ -385,6 +387,7 @@ class ServerDaemon(Daemon):
                         ganglia_host=options.ganglia_host,
                         ganglia_spoof_host=options.ganglia_spoof_host,
                         ganglia_port=options.ganglia_port,
+                        ganglia_counter_group=options.ganglia_counter_group,
                         flush_interval=options.flush_interval,
                         no_aggregate_counters=options.no_aggregate_counters,
                         counters_prefix=options.counters_prefix,
@@ -422,7 +425,12 @@ def run_server():
                         default='localhost')
     parser.add_argument('--ganglia-spoof-host', dest='ganglia_spoof_host',
                         help='host to report metrics as to ganglia', type=str,
-                        default='statd:statd')
+                        default=None)
+    parser.add_argument('--ganglia-counter-group',
+                        help='the group to use for counter metrics', type=str,
+                        # We put counters in _counters group. Underscore is to
+                        # make sure counters show up first in the GUI.
+                        default='_counters')
     parser.add_argument('--flush-interval', dest='flush_interval',
                         help='flush metrics every X seconds',
                         type=int, default=10)
