@@ -75,14 +75,16 @@ class Server(object):
                 host=ganglia_host,
                 port=ganglia_port,
                 protocol="udp",
-                # Set DMAX to flush interval plus 20%. That should avoid
+                tmax=int(self.flush_interval),
+                # Set DMAX to twice the flush interval. That should avoid
                 # metrics to prematurely expire if there is some type of a
                 # delay when flushing.
-                dmax=int(self.flush_interval * 1.2 * 1000),
+                dmax=int(self.flush_interval * 2 * 1000),
                 # What hostname should these metrics be attached to.
                 spoof_host=ganglia_spoof_host,
                 counter_group=ganglia_counter_group,
                 pct_threshold=pct_threshold,
+                no_aggregate_counters=self.no_aggregate_counters,
             )
         elif transport == 'graphite':
             self.transport = TransportGraphite(
@@ -235,39 +237,48 @@ class Server(object):
 
 
 class TransportGanglia(object):
-    def __init__(self, host, port, protocol, dmax, spoof_host, pct_threshold,
-                 counter_group, timing_group_prefix=''):
+    def __init__(self, host, port, protocol, tmax, dmax, spoof_host,
+                 pct_threshold, counter_group, timing_group_prefix='',
+                 no_aggregate_counters=False):
         self.host = host
         self.port = port
         self.protocol = protocol
+        self.tmax = tmax
         self.dmax = dmax
         self.spoof_host = spoof_host
         self.pct_threshold = pct_threshold
         self.counter_group = counter_group
+        self.no_aggregate_counters = no_aggregate_counters
         self.g = None
 
     def start_flush(self):
         self.g = gmetric.Gmetric(self.host, self.port, self.protocol)
 
     def flush_counter(self, k, v, ts):
-        self.g.send(k, v, "double", "count", "both", 60, self.dmax,
+        self.g.send(k, v, "double", "count", "both", self.tmax, self.dmax,
                     self.counter_group, self.spoof_host)
 
-    def flush_timer(self, k, min, mean, max, count, max_threshold, ts):
+    def flush_timer(self, k, min_time, mean_time, max_time, count,
+                    threshold_time, ts):
         # What group should these metrics be in. For the time being we'll set
         # it to the name of the key.
         group = k
-        self.g.send(k + "_lower", min, "double", "time", "both", 60, self.dmax,
-                    group, self.spoof_host)
-        self.g.send(k + "_mean", mean, "double", "time", "both", 60, self.dmax,
-                    group, self.spoof_host)
-        self.g.send(k + "_upper", max, "double", "time", "both", 60, self.dmax,
-                    group, self.spoof_host)
-        self.g.send(k + "_count", count, "double", "count", "both", 60,
-                    self.dmax, group, self.spoof_host)
-        self.g.send(k + "_" + str(self.pct_threshold) + "pct", max_threshold,
-                    "double", "time", "both", 60, self.dmax, group,
-                    self.spoof_host)
+        # Note we're converting the time units from ms to seconds so Ganglia
+        # graphs look more sane.
+        self.g.send(k + "_lower", float(min_time) / 1000.0, "double",
+                    "time (s)", "both", self.tmax, self.dmax, group, self.spoof_host)
+        self.g.send(k + "_mean", float(mean_time) / 1000.0, "double",
+                    "time (s)", "both", self.tmax, self.dmax, group, self.spoof_host)
+        self.g.send(k + "_upper", float(max_time) / 1000.0, "double",
+                    "time (s)", "both", self.tmax, self.dmax, group, self.spoof_host)
+        self.g.send(k + "_" + str(self.pct_threshold) + "pct",
+                    float(threshold_time) / 1000.0, "double", "time (s)",
+                    "both", self.tmax, self.dmax, group, self.spoof_host)
+        count_label = 'count per sec'
+        if self.no_aggregate_counters:
+            count_label = 'count'
+        self.g.send(k + "_count", count, "double", count_label, "both",
+                    self.tmax, self.dmax, group, self.spoof_host)
 
     def flush_statsd_stats(self, stats, ts):
         pass
