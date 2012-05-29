@@ -1,9 +1,12 @@
-python-ss-statsd (1.7-4ss3) oneiric; urgency=low
+python-ss-statsd (1.7-4ss5) oneiric; urgency=low
 
   * Added locking for stats state in flush() and process().
   * Made PEP8 compliant.
-  * Add ganglia_counter_group option (with a default "_counters"
+  * Ganglia: add ganglia_counter_group option (with a default "_counters"
     which matches the previously-hard-coded value).
+  * Ganglia: set TMAX equal to flush interval and DMAX to 2x flush
+    interval.
+  * Ganglia: fix units; send times to Gangila in seconds, not milliseconds.
 
  -- SwiftStack Inc. <contact@swiftstack.net>  Sun, 19 Feb 2012 15:38:52 -0800
 

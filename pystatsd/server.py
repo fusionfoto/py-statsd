@@ -182,10 +182,10 @@ class Server(object):
                 self.timers[k] = []
 
                 if self.debug:
-                    print "Sending %s ====> lower=%s, mean=%s, upper=%s, " \
-                            "%dpct=%s, count=%s" % (
-                                k, min, mean, max, self.pct_threshold,
-                                max_threshold, count)
+                    print "Sending %s ====> lower=%sms, mean=%sms, " \
+                        "upper=%sms, %dpct=%sms, count=%sms" % (
+                            k, min, mean, max, self.pct_threshold,
+                            max_threshold, count)
 
                 self.transport.flush_timer(k, min, mean, max, count,
                                            max_threshold, ts)
@@ -266,13 +266,13 @@ class TransportGanglia(object):
         # Note we're converting the time units from ms to seconds so Ganglia
         # graphs look more sane.
         self.g.send(k + "_lower", float(min_time) / 1000.0, "double",
-                    "time (s)", "both", self.tmax, self.dmax, group, self.spoof_host)
+                    "seconds", "both", self.tmax, self.dmax, group, self.spoof_host)
         self.g.send(k + "_mean", float(mean_time) / 1000.0, "double",
-                    "time (s)", "both", self.tmax, self.dmax, group, self.spoof_host)
+                    "seconds", "both", self.tmax, self.dmax, group, self.spoof_host)
         self.g.send(k + "_upper", float(max_time) / 1000.0, "double",
-                    "time (s)", "both", self.tmax, self.dmax, group, self.spoof_host)
+                    "seconds", "both", self.tmax, self.dmax, group, self.spoof_host)
         self.g.send(k + "_" + str(self.pct_threshold) + "pct",
-                    float(threshold_time) / 1000.0, "double", "time (s)",
+                    float(threshold_time) / 1000.0, "double", "seconds",
                     "both", self.tmax, self.dmax, group, self.spoof_host)
         count_label = 'count per sec'
         if self.no_aggregate_counters:
