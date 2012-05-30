@@ -255,7 +255,7 @@ class TransportGanglia(object):
         self.g = gmetric.Gmetric(self.host, self.port, self.protocol)
 
     def flush_counter(self, k, v, ts):
-        self.g.send(k, v, "double", "count", "both", self.tmax, self.dmax,
+        self.g.send(k, v, "double", "count per sec", "both", self.tmax, self.dmax,
                     self.counter_group, self.spoof_host)
 
     def flush_timer(self, k, min_time, mean_time, max_time, count,
@@ -274,10 +274,7 @@ class TransportGanglia(object):
         self.g.send(k + "_" + str(self.pct_threshold) + "pct",
                     float(threshold_time) / 1000.0, "double", "seconds",
                     "both", self.tmax, self.dmax, group, self.spoof_host)
-        count_label = 'count per sec'
-        if self.no_aggregate_counters:
-            count_label = 'count'
-        self.g.send(k + "_count", count, "double", count_label, "both",
+        self.g.send(k + "_count", count, "double", "count", "both",
                     self.tmax, self.dmax, group, self.spoof_host)
 
     def flush_statsd_stats(self, stats, ts):
