@@ -183,7 +183,7 @@ class Server(object):
 
                 if self.debug:
                     print "Sending %s ====> lower=%sms, mean=%sms, " \
-                        "upper=%sms, %dpct=%sms, count=%sms" % (
+                        "upper=%sms, %dpct=%sms, count=%s" % (
                             k, min, mean, max, self.pct_threshold,
                             max_threshold, count)
 
