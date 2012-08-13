@@ -58,7 +58,7 @@ class Server(object):
                  ganglia_protocol='udp',
                  ganglia_spoof_host='', graphite_host='localhost',
                  graphite_port=2003, flush_interval=10,
-                 no_aggregate_counters=False, counters_prefix='stats',
+                 counters_as_rates=False, counters_prefix='stats',
                  ganglia_counter_group='_counters',
                  timers_prefix='stats.timers', queue=None):
         self.running = True
@@ -68,7 +68,7 @@ class Server(object):
         self.buf = 8192
         self.flush_interval = flush_interval
         self.pct_threshold = pct_threshold
-        self.no_aggregate_counters = no_aggregate_counters
+        self.counters_as_rates = counters_as_rates
 
         if transport == 'ganglia':
             self.transport = TransportGanglia(
@@ -85,7 +85,7 @@ class Server(object):
                 spoof_host=ganglia_spoof_host,
                 counter_group=ganglia_counter_group,
                 pct_threshold=pct_threshold,
-                no_aggregate_counters=self.no_aggregate_counters,
+                counters_as_rates=self.counters_as_rates,
             )
         elif transport == 'graphite':
             self.transport = TransportGraphite(
@@ -151,11 +151,12 @@ class Server(object):
 
         for k, v in self.counters.items():
             v = float(v)
-            if not self.no_aggregate_counters:
+            if self.counters_as_rates:
                 v = v / self.flush_interval
 
             if self.debug:
-                print "Sending %s => count=%s" % (k, v)
+                print "Sending %s => count=%s%s" % (
+                    k, v, '/s' if self.counters_as_rates else '')
 
             self.transport.flush_counter(k, v, ts)
 
@@ -179,14 +180,17 @@ class Server(object):
                     max_threshold = v[thresh_index - 1]
                     total = sum(v)
                     mean = total / count
+                if self.counters_as_rates:
+                    count = float(count) / self.flush_interval
 
                 self.timers[k] = []
 
                 if self.debug:
                     print "Sending %s ====> lower=%sms, mean=%sms, " \
-                        "upper=%sms, %dpct=%sms, count=%s" % (
+                        "upper=%sms, %dpct=%sms, count=%s%s" % (
                             k, min, mean, max, self.pct_threshold,
-                            max_threshold, count)
+                            max_threshold, count,
+                            '/s' if self.counters_as_rates else '')
 
                 self.transport.flush_timer(k, min, mean, max, count,
                                            max_threshold, ts)
@@ -240,7 +244,7 @@ class Server(object):
 class TransportGanglia(object):
     def __init__(self, host, port, protocol, tmax, dmax, spoof_host,
                  pct_threshold, counter_group, timing_group_prefix='',
-                 no_aggregate_counters=False):
+                 counters_as_rates=False):
         self.host = host
         self.port = port
         self.protocol = protocol
@@ -249,7 +253,7 @@ class TransportGanglia(object):
         self.spoof_host = spoof_host
         self.pct_threshold = pct_threshold
         self.counter_group = counter_group
-        self.no_aggregate_counters = no_aggregate_counters
+        self.counters_as_rates = counters_as_rates
         self.g = None
 
     def start_flush(self):
@@ -399,7 +403,7 @@ class ServerDaemon(Daemon):
                         ganglia_port=options.ganglia_port,
                         ganglia_counter_group=options.ganglia_counter_group,
                         flush_interval=options.flush_interval,
-                        no_aggregate_counters=options.no_aggregate_counters,
+                        counters_as_rates=options.counters_as_rates,
                         counters_prefix=options.counters_prefix,
                         timers_prefix=options.timers_prefix)
         server.serve(options.name, options.port)
@@ -447,9 +451,8 @@ def run_server():
     parser.add_argument('--flush-interval', dest='flush_interval',
                         help='flush metrics every X seconds',
                         type=int, default=10)
-    parser.add_argument('--no-aggregate-counters',
-                        dest='no_aggregate_counters',
-                        help='send raw counter values instead of count/sec',
+    parser.add_argument('--counters-as-rates',
+                        help='Send count values as rates: counts per second',
                         action='store_true')
     parser.add_argument('--counters-prefix', dest='counters_prefix',
                         help='prepended to counter names for graphite',
