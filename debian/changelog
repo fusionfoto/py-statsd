@@ -1,3 +1,10 @@
+python-ss-statsd (1.7-4ss8) oneiric; urgency=low
+
+  * Added --ganglia-protocol command-line arg.
+  * Use empty-string as ganglia spoof host value.
+  * Replace confusing and broken --no-aggregate-counters with
+    --counters-as-rates
+
 python-ss-statsd (1.7-4ss7) oneiric; urgency=low
 
   * Added locking for stats state in flush() and process().
