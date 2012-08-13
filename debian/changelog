@@ -5,6 +5,8 @@ python-ss-statsd (1.7-4ss8) oneiric; urgency=low
   * Replace confusing and broken --no-aggregate-counters with
     --counters-as-rates
 
+ -- SwiftStack Inc. <contact@swiftstack.net>  Mon, 13 Aug 2012 12:38:52 -0800
+
 python-ss-statsd (1.7-4ss7) oneiric; urgency=low
 
   * Added locking for stats state in flush() and process().
