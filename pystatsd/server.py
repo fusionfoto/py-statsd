@@ -55,6 +55,7 @@ class Server(object):
 
     def __init__(self, pct_threshold=90, debug=False, transport='graphite',
                  ganglia_host='localhost', ganglia_port=8649,
+                 ganglia_protocol='udp',
                  ganglia_spoof_host='statsd:statsd', graphite_host='localhost',
                  graphite_port=2003, flush_interval=10,
                  no_aggregate_counters=False, counters_prefix='stats',
@@ -74,7 +75,7 @@ class Server(object):
                 # Ganglia specific settings
                 host=ganglia_host,
                 port=ganglia_port,
-                protocol="udp",
+                protocol=ganglia_protocol,
                 tmax=int(self.flush_interval),
                 # Set DMAX to twice the flush interval. That should avoid
                 # metrics to prematurely expire if there is some type of a
@@ -393,6 +394,7 @@ class ServerDaemon(Daemon):
                         graphite_host=options.graphite_host,
                         graphite_port=options.graphite_port,
                         ganglia_host=options.ganglia_host,
+                        ganglia_protocol=options.ganglia_protocol,
                         ganglia_spoof_host=options.ganglia_spoof_host,
                         ganglia_port=options.ganglia_port,
                         ganglia_counter_group=options.ganglia_counter_group,
@@ -425,12 +427,15 @@ def run_server():
     parser.add_argument('--graphite-host', dest='graphite_host',
                         help='host to which graphite metrics are sent',
                         type=str, default='localhost')
-    parser.add_argument('--ganglia-port', dest='ganglia_port',
-                        help='port to connect to ganglia on', type=int,
-                        default=8649)
-    parser.add_argument('--ganglia-host', dest='ganglia_host',
+    parser.add_argument('--ganglia-host',
                         help='host to connect to ganglia on', type=str,
                         default='localhost')
+    parser.add_argument('--ganglia-port',
+                        help='port to connect to ganglia on', type=int,
+                        default=8649)
+    parser.add_argument('--ganglia-protocol',
+                        help='Ganglia protocol (udp or multicast)', type=str,
+                        default='udp')
     parser.add_argument('--ganglia-spoof-host', dest='ganglia_spoof_host',
                         help='host to report metrics as to ganglia', type=str,
                         default=None)
