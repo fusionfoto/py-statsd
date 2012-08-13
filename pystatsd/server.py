@@ -56,7 +56,7 @@ class Server(object):
     def __init__(self, pct_threshold=90, debug=False, transport='graphite',
                  ganglia_host='localhost', ganglia_port=8649,
                  ganglia_protocol='udp',
-                 ganglia_spoof_host='statsd:statsd', graphite_host='localhost',
+                 ganglia_spoof_host='', graphite_host='localhost',
                  graphite_port=2003, flush_interval=10,
                  no_aggregate_counters=False, counters_prefix='stats',
                  ganglia_counter_group='_counters',
@@ -438,7 +438,7 @@ def run_server():
                         default='udp')
     parser.add_argument('--ganglia-spoof-host', dest='ganglia_spoof_host',
                         help='host to report metrics as to ganglia', type=str,
-                        default=None)
+                        default='')
     parser.add_argument('--ganglia-counter-group',
                         help='the group to use for counter metrics', type=str,
                         # We put counters in _counters group. Underscore is to
