@@ -31,10 +31,10 @@ def _clean_key(k):
         )
     )
 
-TIMER_MSG = '''%(prefix)s.%(key)s.lower %(min)s %(ts)s
+TIMER_MSG = '''%(prefix)s.%(key)s.lower %(lower)s %(ts)s
 %(prefix)s.%(key)s.count %(count)s %(ts)s
 %(prefix)s.%(key)s.mean %(mean)s %(ts)s
-%(prefix)s.%(key)s.upper %(max)s %(ts)s
+%(prefix)s.%(key)s.upper %(upper)s %(ts)s
 %(prefix)s.%(key)s.upper_%(pct_threshold)s %(max_threshold)s %(ts)s
 '''
 
@@ -169,11 +169,11 @@ class Server(object):
                 # percentiles.
                 v.sort()
                 count = len(v)
-                min = v[0]
-                max = v[-1]
+                lower = v[0]
+                upper = v[-1]
 
-                mean = min
-                max_threshold = max
+                mean = lower
+                max_threshold = upper
 
                 if count > 1:
                     thresh_index = int((self.pct_threshold / 100.0) * count)
@@ -188,11 +188,11 @@ class Server(object):
                 if self.debug:
                     print "Sending %s ====> lower=%sms, mean=%sms, " \
                         "upper=%sms, %dpct=%sms, count=%s%s" % (
-                            k, min, mean, max, self.pct_threshold,
+                            k, lower, mean, upper, self.pct_threshold,
                             max_threshold, count,
                             '/s' if self.counters_as_rates else '')
 
-                self.transport.flush_timer(k, min, mean, max, count,
+                self.transport.flush_timer(k, lower, mean, upper, count,
                                            max_threshold, ts)
                 stats += 1
 
@@ -308,13 +308,13 @@ class TransportGraphite(object):
         msg = '%s%s %s %s\n' % (self.counters_prefix, k, v, ts)
         self.stat_string += msg
 
-    def flush_timer(self, k, min, mean, max, count, max_threshold, ts):
+    def flush_timer(self, k, lower, mean, upper, count, max_threshold, ts):
         self.stat_string += TIMER_MSG % {
             'prefix': self.timers_prefix,
             'key': k,
             'mean': mean,
-            'max': max,
-            'min': min,
+            'upper': upper,
+            'lower': lower,
             'count': count,
             'max_threshold': max_threshold,
             'pct_threshold': self.pct_threshold,
@@ -378,7 +378,7 @@ class TransportNop(object):
     def flush_counter(self, k, v, ts):
         pass
 
-    def flush_timer(self, k, min, mean, max, count, max_threshold, ts):
+    def flush_timer(self, k, lower, mean, upper, count, max_threshold, ts):
         pass
 
     def flush_statsd_stats(self, stats, ts):
