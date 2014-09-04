@@ -1,4 +1,4 @@
-python-ss-statsd (1.7-4ss8) oneiric; urgency=low
+python-ss-statsd (1.7-4ss8) precise; urgency=low
 
   * Added --ganglia-protocol command-line arg.
   * Use empty-string as ganglia spoof host value.
@@ -7,7 +7,7 @@ python-ss-statsd (1.7-4ss8) oneiric; urgency=low
 
  -- SwiftStack Inc. <contact@swiftstack.net>  Mon, 13 Aug 2012 12:38:52 -0800
 
-python-ss-statsd (1.7-4ss7) oneiric; urgency=low
+python-ss-statsd (1.7-4ss7) precise; urgency=low
 
   * Added locking for stats state in flush() and process().
   * Made PEP8 compliant.
@@ -19,7 +19,7 @@ python-ss-statsd (1.7-4ss7) oneiric; urgency=low
 
  -- SwiftStack Inc. <contact@swiftstack.net>  Sun, 19 Feb 2012 15:38:52 -0800
 
-python-ss-statsd (1.7-3ss8) oneiric; urgency=low
+python-ss-statsd (1.7-3ss8) precise; urgency=low
 
   * Added a ClientNop class.
   * Added "queue" writer.
