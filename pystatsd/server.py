@@ -215,8 +215,12 @@ class Server(object):
         assert type(port) is types.IntType, 'port is not an integer: %s' % (
             port,)
         addr = (hostname, port)
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._sock.bind(addr)
+        try:
+            self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self._sock.bind(addr)
+        except socket.gaierror:
+            self._sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+            self._sock.bind(addr)
 
         self._set_timer()
         while True:
