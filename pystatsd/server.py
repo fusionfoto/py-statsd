@@ -62,6 +62,7 @@ class Server(object):
     #     flush_interval=flush_interval_seconds,
     #     counters_prefix=node_uuid,
     #     timers_prefix=node_uuid,
+    #     ...
     # )
     def __init__(self, pct_threshold=90, debug=False, transport='graphite',
                  ganglia_host='localhost', ganglia_port=8649,
@@ -70,7 +71,9 @@ class Server(object):
                  graphite_port=2003, flush_interval=10,
                  counters_as_rates=False, counters_prefix='stats',
                  ganglia_counter_group='_counters',
-                 timers_prefix='stats.timers', queue=None):
+                 timers_prefix='stats.timers', queue=None,
+                 statsd_forward_host=None, statsd_forward_port=None,
+                 statsd_forward_prefix=None):
         self.running = True
         self._sock = None
         self._timer = None
@@ -79,6 +82,12 @@ class Server(object):
         self.flush_interval = flush_interval
         self.pct_threshold = pct_threshold
         self.counters_as_rates = counters_as_rates
+        self.statsd_forward_address = None
+        if statsd_forward_host and statsd_forward_port:
+            self.statsd_forward_address = (statsd_forward_host,
+                                           int(statsd_forward_port))
+        self.statsd_forward_prefix = statsd_forward_prefix + '.' \
+            if statsd_forward_prefix else ''
 
         if transport == 'ganglia':
             self.transport = TransportGanglia(
@@ -122,6 +131,13 @@ class Server(object):
         self.flusher = 0
 
     def process(self, data):
+        if self.statsd_forward_address:
+            socket.sendto(
+                self.statsd_forward_prefix + data
+                if self.statsd_forward_prefix else data,
+                socket.MSG_DONTWAIT,  # forwarding is best-effort
+                self.statsd_forward_address)
+
         bits = data.split(':')
         key = _clean_key(bits[0])
 
