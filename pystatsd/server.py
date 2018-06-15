@@ -31,6 +31,7 @@ def _clean_key(k):
         )
     )
 
+
 TIMER_MSG = '''%(prefix)s.%(key)s.lower %(lower)s %(ts)s
 %(prefix)s.%(key)s.count %(count)s %(ts)s
 %(prefix)s.%(key)s.mean %(mean)s %(ts)s
@@ -44,7 +45,7 @@ def close_on_exn(fn):
     def wrapper(self, *args, **kwargs):
         try:
             fn(self, *args, **kwargs)
-        except:
+        except Exception:
             self.stop()
             raise
 
@@ -53,6 +54,15 @@ def close_on_exn(fn):
 
 class Server(object):
 
+    # FYI, SwiftStack node collectd plugin instantiates this like so:
+    # server = Server(
+    #     pct_threshold=pct_threshold,
+    #     transport='graphite_queue',
+    #     queue=metrics_queue,
+    #     flush_interval=flush_interval_seconds,
+    #     counters_prefix=node_uuid,
+    #     timers_prefix=node_uuid,
+    # )
     def __init__(self, pct_threshold=90, debug=False, transport='graphite',
                  ganglia_host='localhost', ganglia_port=8649,
                  ganglia_protocol='udp',
@@ -203,7 +213,7 @@ class Server(object):
 
         if self.debug:
             print "\n================== Flush completed. Waiting until " \
-                    "next flush. Sent out %d metrics =======" % (stats,)
+                "next flush. Sent out %d metrics =======" % (stats,)
 
     def _set_timer(self):
         if self.running:
@@ -212,8 +222,8 @@ class Server(object):
 
     @close_on_exn
     def serve(self, hostname='', port=8125):
-        assert type(port) is types.IntType, 'port is not an integer: %s' % (
-            port,)
+        assert isinstance(port, types.IntType), \
+            'port is not an integer: %s' % (port,)
         addr = (hostname, port)
         try:
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -239,7 +249,7 @@ class Server(object):
             try:
                 # If you do not shutdown, the recvfrom call never returns.
                 self._sock.shutdown(socket.SHUT_RD)
-            except:
+            except Exception:
                 pass
 
             self._sock.close()
@@ -276,11 +286,14 @@ class TransportGanglia(object):
         # Note we're converting the time units from ms to seconds so Ganglia
         # graphs look more sane.
         self.g.send(k + "_lower", float(min_time) / 1000.0, "double",
-                    "seconds", "both", self.tmax, self.dmax, group, self.spoof_host)
+                    "seconds", "both", self.tmax, self.dmax, group,
+                    self.spoof_host)
         self.g.send(k + "_mean", float(mean_time) / 1000.0, "double",
-                    "seconds", "both", self.tmax, self.dmax, group, self.spoof_host)
+                    "seconds", "both", self.tmax, self.dmax, group,
+                    self.spoof_host)
         self.g.send(k + "_upper", float(max_time) / 1000.0, "double",
-                    "seconds", "both", self.tmax, self.dmax, group, self.spoof_host)
+                    "seconds", "both", self.tmax, self.dmax, group,
+                    self.spoof_host)
         self.g.send(k + "_" + str(self.pct_threshold) + "pct",
                     float(threshold_time) / 1000.0, "double", "seconds",
                     "both", self.tmax, self.dmax, group, self.spoof_host)
@@ -489,6 +502,7 @@ def run_server():
         daemon.stop()
     else:
         daemon.run(options)
+
 
 if __name__ == '__main__':
     run_server()
