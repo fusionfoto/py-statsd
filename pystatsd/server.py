@@ -40,6 +40,16 @@ TIMER_MSG = '''%(prefix)s.%(key)s.lower %(lower)s %(ts)s
 '''
 
 
+def is_ipv6(ip_string):
+    try:
+        socket.inet_pton(socket.AF_INET6, ip_string)
+        return True
+    except socket.error:
+        return False
+    except TypeError:
+        return False
+
+
 def close_on_exn(fn):
     @functools.wraps(fn)
     def wrapper(self, *args, **kwargs):
@@ -82,6 +92,7 @@ class Server(object):
         self.flush_interval = flush_interval
         self.pct_threshold = pct_threshold
         self.counters_as_rates = counters_as_rates
+        self._sock_forward = None
         self.statsd_forward_address = None
         if statsd_forward_host and statsd_forward_port:
             self.statsd_forward_address = (statsd_forward_host,
@@ -131,8 +142,8 @@ class Server(object):
         self.flusher = 0
 
     def process(self, data):
-        if self.statsd_forward_address:
-            socket.sendto(
+        if self._sock_forward:
+            self._sock_forward.sendto(
                 self.statsd_forward_prefix + data
                 if self.statsd_forward_prefix else data,
                 socket.MSG_DONTWAIT,  # forwarding is best-effort
@@ -247,6 +258,14 @@ class Server(object):
         except socket.gaierror:
             self._sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
             self._sock.bind(addr)
+
+        if self.statsd_forward_address:
+            if is_ipv6(self.statsd_forward_address[0]):
+                self._sock_forward = socket.socket(socket.AF_INET6,
+                                                   socket.SOCK_DGRAM)
+            else:
+                self._sock_forward = socket.socket(socket.AF_INET,
+                                                   socket.SOCK_DGRAM)
 
         self._set_timer()
         while True:
